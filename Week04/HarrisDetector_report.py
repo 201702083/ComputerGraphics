@@ -82,8 +82,9 @@ def calc_derivatives(src):
     :return: Ix, Iy
     """
     # calculate Ix, Iy
-    Ix = ???
-    Iy = ???
+    sobel_x,sobel_y = get_my_sobel()
+    Ix = my_filtering(src,sobel_x)
+    Iy = my_filtering(src,sobel_y)
     return Ix, Iy
 
 
@@ -109,9 +110,9 @@ def HarrisDetector(src, gaus_filter_size = 3, gaus_sigma = 1, alpha = 0.04, thre
     #구하기
     """
     # Square of derivatives
-    IxIx = ???
-    IyIy = ???
-    IxIy = ???
+    IxIx = Ix*Ix
+    IyIy = Iy*Iy
+    IxIy = Ix*Iy
 
     #0 ~ 1 사이의 값으로 변경 후 0 ~ 255로 변경 -> 결과가 잘 나왔는지 확인하기위해서
     dst_IxIy_Norm = ((IxIy - np.min(IxIy) )/np.max(IxIy - np.min(IxIy)) * 255 + 0.5).astype(np.uint8)
@@ -133,10 +134,11 @@ def HarrisDetector(src, gaus_filter_size = 3, gaus_sigma = 1, alpha = 0.04, thre
     #G_IyIy = IyIy에 가우시안 필터 적용
     #G_IxIy = IxIy에 가우시안 필터 적용    
     """
-
-    G_IxIx = ???
-    G_IyIy = ???
-    G_IxIy = ???
+    myGaussian = my_get_Gaussian_filter(Ix.shape)
+    print(myGaussian)
+    G_IxIx = my_filtering(IxIx , myGaussian)
+    G_IyIy = my_filtering(IyIy , myGaussian)
+    G_IxIy = my_filtering(IxIy , myGaussian)
 
     #0 ~ 1 사이의 값으로 변경 후 0 ~ 255로 변경 -> 결과가 잘 나왔는지 확인하기위해서
     G_dst_IxIy_Norm = ((G_IxIy - np.min(G_IxIy) )/np.max(G_IxIy - np.min(G_IxIy)) * 255 + 0.5).astype(np.uint8)
@@ -155,7 +157,7 @@ def HarrisDetector(src, gaus_filter_size = 3, gaus_sigma = 1, alpha = 0.04, thre
     #ToDo
     # har 구하기  교수님 이론 pdf 67page 참고
     """
-    har = ???
+    har = 1
 
     #0 ~ 1 사이의 값으로 변경 후 0 ~ 255로 변경 -> 결과가 잘 나왔는지 확인하기위해서
     G_dst_har_Norm = ((har - np.min(har) )/np.max(har - np.min(har)) * 255 + 0.5).astype(np.uint8)
