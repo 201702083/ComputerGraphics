@@ -99,6 +99,7 @@ def HarrisDetector(src, gaus_filter_size = 3, gaus_sigma = 1, alpha = 0.04, thre
     cv2.imshow('dst_x_Norm', dst_x_Norm)
     cv2.imshow('dst_y_Norm', dst_y_Norm)
     cv2.waitKey()
+
     cv2.destroyWindow('dst_x_Norm')
     cv2.destroyWindow('dst_y_Norm')
 
@@ -134,8 +135,7 @@ def HarrisDetector(src, gaus_filter_size = 3, gaus_sigma = 1, alpha = 0.04, thre
     #G_IyIy = IyIy에 가우시안 필터 적용
     #G_IxIy = IxIy에 가우시안 필터 적용    
     """
-    myGaussian = my_get_Gaussian_filter(Ix.shape)
-    print(myGaussian)
+    myGaussian = my_get_Gaussian_filter((gaus_filter_size,gaus_filter_size),gaus_sigma)
     G_IxIx = my_filtering(IxIx , myGaussian)
     G_IyIy = my_filtering(IyIy , myGaussian)
     G_IxIy = my_filtering(IxIy , myGaussian)
@@ -157,7 +157,7 @@ def HarrisDetector(src, gaus_filter_size = 3, gaus_sigma = 1, alpha = 0.04, thre
     #ToDo
     # har 구하기  교수님 이론 pdf 67page 참고
     """
-    har = 1
+    har = G_IxIx*G_IyIy - G_IxIy**2 - alpha*(np.add(G_IxIx,G_IyIy))**2
 
     #0 ~ 1 사이의 값으로 변경 후 0 ~ 255로 변경 -> 결과가 잘 나왔는지 확인하기위해서
     G_dst_har_Norm = ((har - np.min(har) )/np.max(har - np.min(har)) * 255 + 0.5).astype(np.uint8)
@@ -179,15 +179,15 @@ def main():
     src = cv2.imread('../image/zebra.png')
     harris_img = src.copy()
     gray = cv2.cvtColor(src, cv2.COLOR_BGR2GRAY).astype(np.float32) / 255.
-    cv2.imshow('original', src)
+    cv2.imshow('201702083 - original', src)
 
     dst = HarrisDetector(gray, gaus_filter_size=3, gaus_sigma=1, alpha = 0.04)
     dst = cv2.dilate(dst, None)
     interest_points = np.zeros((dst.shape[0], dst.shape[1], 3))
     interest_points[dst != 0]=[0, 0, 255]
     harris_img[dst != 0]=[0, 0, 255]
-    cv2.imshow('interest points', interest_points)
-    cv2.imshow('harris_img', harris_img)
+    cv2.imshow('201702083 - interest points', interest_points)
+    cv2.imshow('201702083 - harris_img', harris_img)
     cv2.waitKey()
     cv2.destroyAllWindows()
 
