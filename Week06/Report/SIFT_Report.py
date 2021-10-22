@@ -119,6 +119,7 @@ def SIFT(src):
         for row in range(-8, 8):
             for col in range(-8, 8):
                 p_y = int(y + row)
+                p_y = int(y + row)
                 p_x = int(x + col)
                 if p_y < 0 or p_y > src.shape[0] - 1 or p_x < 0 or p_x > src.shape[1] - 1:
                     continue  # 이미지를 벗어나는 부분에 대한 처리
@@ -134,9 +135,16 @@ def SIFT(src):
         ## keypoints[i].angle = ???
         ###################################################################
 
-        # max * 0.8 이상 고려 X
-        max = orient_hist.argmax()
+        # 최대값
+        max = orient_hist.argmax() # 최대 가중치의 각도
         keypoints[i].angle = max * 10.
+
+        # max * 0.8 이상 고려
+        maxWeight = orient_hist.max() # 최대 가중치
+        for j in range(36) : # len  254
+            if orient_hist[j] > maxWeight * 0.8 :
+                keypoints.append(KeyPoint(x, y, size, j * 10, response, octave, class_id))
+
 
     print('calculate descriptor')
     descriptors = np.zeros((len(keypoints), 128))  # 8 orientation * 4 * 4 = 128 dimensions
