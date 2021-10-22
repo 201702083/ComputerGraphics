@@ -119,7 +119,6 @@ def SIFT(src):
         for row in range(-8, 8):
             for col in range(-8, 8):
                 p_y = int(y + row)
-                p_y = int(y + row)
                 p_x = int(x + col)
                 if p_y < 0 or p_y > src.shape[0] - 1 or p_x < 0 or p_x > src.shape[1] - 1:
                     continue  # 이미지를 벗어나는 부분에 대한 처리
