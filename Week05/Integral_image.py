@@ -1,12 +1,38 @@
 import numpy as np
 
 def get_integral_image(src):
-    ???
+    assert len(src.shape) == 2
+    h, w = src.shape
+    dst = np.zeros(src.shape)
+    for row in range(h):
+        dst[row,0] = np.sum(src[0:row+1, 0])
+    for col in range(w):
+        dst[0,col] = np.sum(src[0,0:col+1])
+    for row in range(1,h):
+        for col in range(1,w):
+            dst[row,col] = src[row,col] + dst[row-1,col] + dst[row,col-1] - dst[row-1, col-1]
 
     return dst
 
 def calc_local_integral_value(src, left_top, right_bottom):
-    ???
+    assert len(left_top) == 2
+    assert len(right_bottom) == 2
+
+    lt_row , lt_col = left_top
+    rb_row , rb_col = right_bottom
+
+    lt_val = src[lt_row -1, lt_col -1]
+    rt_val = src[rb_row -1, rb_col]
+    lb_val = src[rb_row, lt_col-1]
+    rb_val = src[rb_row, rb_col]
+
+    if lt_row == 0 :
+        lt_val = 0
+        lb_val = 0
+
+    if lt_col == 0 :
+        lt_val = 0
+        rt_val = 0
 
     return lt_val - lb_val - rt_val + rb_val
 

@@ -102,7 +102,7 @@ def calc_local_integral_value(src, left_top, right_bottom):
     rb_row, rb_col = right_bottom
 
     lt_val = src[lt_row - 1, lt_col - 1]
-    rt_val = src[rb_row - 1, rb_col]
+    rt_val = src[lt_row - 1, rb_col]
     lb_val = src[rb_row, lt_col - 1]
     rb_val = src[rb_row, rb_col]
 
@@ -113,7 +113,7 @@ def calc_local_integral_value(src, left_top, right_bottom):
     if lt_col == 0:
         lt_val = 0
         lb_val = 0
-
+    # print(lt_val , ' - ', lb_val , ' - ', rt_val , ' + ', rb_val)
     return lt_val - lb_val - rt_val + rb_val
 
 
@@ -124,13 +124,13 @@ def calc_M_harris(IxIx, IxIy, IyIy, fsize=5):
     IxIx_pad = my_padding(IxIx, (fsize, fsize))
     IxIy_pad = my_padding(IxIy, (fsize, fsize))
     IyIy_pad = my_padding(IyIy, (fsize, fsize))
-    N = np.zeros((h,w,2,2))
-    for row in range(h):
-        for col in range(w):
-            N[row, col, 0, 0] = np.sum(IxIx_pad[row:row+fsize, col:col+fsize])
-            N[row, col, 0, 1] = np.sum(IxIy_pad[row:row+fsize, col:col+fsize])
-            N[row, col, 1, 0] = M[row, col, 0, 1]
-            N[row, col, 1, 1] = np.sum(IyIy_pad[row:row+fsize, col:col+fsize])
+    # N = np.zeros((h,w,2,2))
+    # for row in range(h):
+    #     for col in range(w):
+    #         N[row, col, 0, 0] = np.sum(IxIx_pad[row:row+fsize, col:col+fsize])
+    #         N[row, col, 0, 1] = np.sum(IxIy_pad[row:row+fsize, col:col+fsize])
+    #         N[row, col, 1, 0] = M[row, col, 0, 1]
+    #         N[row, col, 1, 1] = np.sum(IyIy_pad[row:row+fsize, col:col+fsize])
 
     ##########################################################################
     # ToDo
@@ -138,22 +138,16 @@ def calc_M_harris(IxIx, IxIy, IyIy, fsize=5):
     # 4중 for문을 채워서 완성하기
     # 실습 시간에 했던 내용을 생각하면 금방 해결할 수 있음
     ##########################################################################
-    # for row in range(h):
-    #     for col in range(w):
-    #
-    #         for f_row in range(fsize):
-    #             for f_col in range(fsize):
-    #                 ##############################
-    #                 # ToDo
-    #                 # 위의 2중 for문을 참고하여 M 완성
-    #                 ##############################
-    #                 M[row, col, 0, 0] += IxIx_pad[row + f_row, col + f_col]
-    #                 M[row, col, 0, 1] += IxIy_pad[row + f_row, col + f_col]
-    #                 M[row, col, 1, 1] += IyIy_pad[row + f_row, col + f_col]
-    #         M[row, col, 1, 0] = M[row, col, 0, 1]
-    # if np.array_equal(N,M) :
-    #     sys.exit()
-    return N
+    for row in range(h):
+        for col in range(w):
+            for f_row in range(fsize):
+                for f_col in range(fsize):
+                    M[row, col, 0, 0] += IxIx_pad[row + f_row, col + f_col]
+                    M[row, col, 0, 1] += IxIy_pad[row + f_row, col + f_col]
+                    M[row, col, 1, 1] += IyIy_pad[row + f_row, col + f_col]
+            M[row, col, 1, 0] = M[row, col, 0, 1]
+
+    return M
 
 
 ## Integral을 사용하지 않은 Harris detector
@@ -184,8 +178,13 @@ def harris_detector(src, k=0.04, threshold_rate=0.01, fsize=5):
             # trace_M 계산
             # R 계산 Harris 방정식 구현
             ##########################################################################
-            det_M = np.sum(np.subtract(np.multiply(M_harris[row, col, 0, 0],M_harris[row, col, 1, 1]),M_harris[row, col, 0, 1] ** 2))
-            trace_M = np.sum(np.add(M_harris[row, col, 0, 0],M_harris[row, col, 1, 1]))
+
+            # IxIx*IyIy - IxIy^2
+            det_M = M_harris[row, col, 0, 0] * M_harris[row, col, 1, 1] - M_harris[row, col, 0, 1] ** 2
+
+            # IxIx + IyIy
+            trace_M = M_harris[row, col, 0, 0] + M_harris[row, col, 1, 1]
+
             R[row, col] = det_M - k * (trace_M * trace_M)
     # thresholding
     R[R < threshold_rate * np.max(R)] = 0
@@ -195,7 +194,7 @@ def harris_detector(src, k=0.04, threshold_rate=0.01, fsize=5):
 
     harris_img[R != 0] = [0, 0, 255]
 
-    return harris_img , M_harris
+    return harris_img, M_harris
 
 
 def calc_M_integral(IxIx_integral, IxIy_integral, IyIy_integral, fsize=5):
@@ -212,14 +211,18 @@ def calc_M_integral(IxIx_integral, IxIy_integral, IyIy_integral, fsize=5):
     # integral 값을 이용하여 covariance matrix 구하기
     # calc_local_integral_value를 사용하면 쉽게 구할 수 있음
     ##########################################################################
-    fsize //= 2
-    fsize *= 2
+    window = (fsize // 2) * 2
     for row in range(h):
+
         for col in range(w):
-            M[row, col, 0, 0] = calc_local_integral_value(IxIx_integral_pad, (row, col),(row + fsize , col + fsize))
-            M[row, col, 0, 1] = calc_local_integral_value(IxIy_integral_pad, (row, col),(row + fsize , col + fsize))
+
+            M[row, col, 0, 0] = calc_local_integral_value(IxIx_integral_pad, (row, col), (row + window, col + window))
+
+            M[row, col, 0, 1] = calc_local_integral_value(IxIy_integral_pad, (row, col), (row + window, col + window))
+
             M[row, col, 1, 0] = M[row, col, 0, 1]
-            M[row, col, 1, 1] = calc_local_integral_value(IyIy_integral_pad, (row, col),(row + fsize , col + fsize))
+
+            M[row, col, 1, 1] = calc_local_integral_value(IyIy_integral_pad, (row, col), (row + window, col + window))
 
     return M
 
@@ -262,8 +265,12 @@ def harris_detector_integral(src, k=0.04, threshold_rate=0.01, fsize=5):
             # trace_M 계산
             # R 계산 Harris 방정식 구현
             ##########################################################################
-            det_M = np.sum(M_integral[row, col, 0, 0] * M_integral[row, col, 1, 1] - M_integral[row, col, 0, 1] ** 2)
-            trace_M = np.sum(M_integral[row, col, 0, 0] + M_integral[row, col, 1, 1])
+
+            # IxIx*IyIy - IxIy^2
+            det_M = M_integral[row, col, 0, 0] * M_integral[row, col, 1, 1] - M_integral[row, col, 0, 1] ** 2
+
+            # IxIx + IyIy
+            trace_M = M_integral[row, col, 0, 0] + M_integral[row, col, 1, 1]
             R[row, col] = det_M - k * (trace_M * trace_M)
 
     # thresholding
@@ -274,15 +281,14 @@ def harris_detector_integral(src, k=0.04, threshold_rate=0.01, fsize=5):
 
     harris_img[R != 0] = [0, 0, 255]
 
-    return harris_img , M_integral
+    return harris_img, M_integral
 
 
 def main():
     src = cv2.imread('../image/zebra.png')  # shape : (552, 435, 3)
     print('start!')
-    harris_img , MH= harris_detector(src)
-    harris_integral_img , MI= harris_detector_integral(src)
-    print( MH , MI )
+    harris_img, MH = harris_detector(src)
+    harris_integral_img, MI = harris_detector_integral(src)
     cv2.imshow('harris_img ' + '201702083', harris_img)
     cv2.imshow('harris_integral_img ' + '201702083', harris_integral_img)
     cv2.waitKey()
