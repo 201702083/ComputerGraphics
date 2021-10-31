@@ -128,10 +128,6 @@ def SIFT(src):
         ## ToDo
         ## orient_hist에서 가중치가 가장 큰 값을 추출하여 keypoint의 angle으로 설정
         ## 가장 큰 가중치의 0.8배보다 큰 가중치의 값도 keypoint의 angle로 설정
-        ## keypoint 저장에는 KeyPoint module을 사용할 것 
-        ## angle은 0 ~ 360도의 표현으로 저장해야 함
-        ## np.max, np.argmax를 활용하면 쉽게 구할 수 있음
-        ## keypoints[i].angle = ???
         ###################################################################
 
         # 최대값
@@ -141,13 +137,13 @@ def SIFT(src):
         # max * 0.8 이상 고려
         maxWeight = orient_hist.max() # 최대 가중치
         for j in range(36) : # len  254
-            if orient_hist[j] > maxWeight * 0.8 :
+            if orient_hist[j] > maxWeight * 0.8 and j != max : # 중복 키포인트 방지 j != max
                 keypoints.append(KeyPoint(x, y, size, j * 10, response, octave, class_id))
 
 
     print('calculate descriptor')
     descriptors = np.zeros((len(keypoints), 128))  # 8 orientation * 4 * 4 = 128 dimensions
-
+    angle = angle
     for i in range(len(keypoints)):
         x, y = keypoints[i].pt
         theta = np.deg2rad(keypoints[i].angle)
@@ -185,9 +181,15 @@ def SIFT(src):
                 ## 최종적으로 128개 (8개의 orientation * 4 * 4)의 descriptor를 가짐
                 ## gaussian_weight = np.exp((-1 / 16) * (row_rot ** 2 + col_rot ** 2))
                 ###################################################################
-                gaussian_weight = np.exp((-1 / 16) * (row_rot ** 2 + col_rot ** 2))
 
-                orient_hist_8[int( (angle[p_y, p_x] - keypoints[i].angle) // 45)] += magnitude[p_y, p_x]* gaussian_weight
+                gaussian_weight = np.exp((-1 / 16) * (row_rot ** 2 + col_rot ** 2))
+                # deg = int( ( angle[p_y,p_x] -   keypoints[i].angle ) // 45)
+                deg = int(( ( angle[p_y,p_x] -   keypoints[i].angle + 360. ) / 45) % 8)
+
+                orient_hist_8[deg] +=\
+                    magnitude[p_y, p_x]* gaussian_weight
+
+                # 윈도우 이동 감지를 위한 초기화
                 originMx = mX
                 originMy = mY
 
@@ -207,7 +209,7 @@ def SIFT(src):
                         col -= size
                         row += 1
 
-                # 윈도우 이동을 감지해 16개의 angle orient_hist_8에 추
+                # 윈도우 이동을 감지해 16개의 angle orient_hist_8에 추가
                 if ( originMx != mX or originMy != mY): # 윈도우 이동 -> 16개 미니 윈도우 체크
                     descriptors[i][count:count + 8] = orient_hist_8[0:8]
                     orient_hist_8 = np.zeros(8, )
