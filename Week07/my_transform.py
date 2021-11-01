@@ -11,25 +11,7 @@ def transformation_backward(src, M):
     print("backward calc")
     for row_ in range(h_):
         for col_ in range(w_):
-            xy = (np.linalg.inv(M)).dot(np.array([[col_,row_,1]]).T)
-            x = xy[0,0]
-            y = xy[1,0]
-
-            floorX = int(x)
-            floorY = int(y)
-
-            t, s = x - floorX , y - floorY
-
-            zz = (1-t) * (1-s)
-            zo = t * (1-s)
-            oz = (1-t) * s
-            oo = t * s
-
-            if floorY < 0 or floorX < 0 or (floorY + 1) >= h or (floorX + 1) >= w:
-                continue
-
-            inteval = 
-
+            ???
 
     dst = ((dst - np.min(dst)) / np.max(dst - np.min(dst)) * 255 + 0.5)  # normalization
     return dst.astype(np.uint8)
@@ -46,15 +28,7 @@ def transformation_forward(src, M):
     print("forward calc")
     for row in range(h):
         for col in range(w):
-            xy_prime = np.dot(M, np.array([[col,row,1]]).T)
-            x_ = xy_prime[0,0]
-            y_ = xy_prime[1,0]
-
-            if x_ < 0 or y_ <0 or x_ >= w_ or y_ >= h_ :
-                continue
-
-            dst[int(y_),int(x_),:] += src[row,col,:]
-            count[int(y_), int(x_),:] += 1
+            ???
 
     dst = (dst / count)
     return dst.astype(np.uint8)

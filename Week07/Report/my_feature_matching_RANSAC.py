@@ -35,8 +35,8 @@ def backward(img1, M):
 
     for row in range(h):
         for col in range(w):
-            xy_prime = ???
-            xy = ???
+            xy_prime = np.array([[col,row,1]]).T
+            xy = (np.linalg.inv(M)).dot(xy_prime)
 
             x_ = xy[0, 0]
             y_ = xy[1, 0]
@@ -61,13 +61,25 @@ def my_ls(matches, kp1, kp2):
     A = []
     B = []
     for idx, match in enumerate(matches):
-        ???
+        trainInd = match.trainIdx
+        queryInd = match.queryIdx
+        x,y = kp1[queryInd].pt
+        x_prime,y_prime = kp2[trainInd].pt
 
+        A.append([x,y,1,0,0,0])
+        A.append([0,0,0,x,y,1])
+        B.append([x_prime])
+        B.append([y_prime])
     A = np.array(A)
     B = np.array(B)
 
+    # print('--A--\n', A)
+    # print('--B--\n', B)
     try:
-        ???
+        ATA = np.dot(A.T, A)
+        ATB = np.dot(A.T, B)
+        X = np.dot(np.linalg.inv(ATA), ATB)
+        # print('--X--\n',X)
     except:
         print('can\'t calculate np.linalg.inv((np.dot(A.T, A)) !!!!!')
         X = None
@@ -81,7 +93,7 @@ def get_matching_keypoints(img1, img2, keypoint_num):
     :param keypoint_num: 추출한 keypoint의 수
     :return: img1의 특징점인 kp1, img2의 특징점인 kp2, 두 특징점의 매칭 결과
     '''
-    sift = cv2.xfeatures2d.SIFT_create(keypoint_num)
+    sift = cv2.SIFT_create(keypoint_num)
 
     kp1, des1 = sift.detectAndCompute(img1, None)
     kp2, des2 = sift.detectAndCompute(img2, None)
@@ -103,13 +115,20 @@ def get_matching_keypoints(img1, img2, keypoint_num):
     """
     return kp1, kp2, matches
 
+
 def feature_matching(img1, img2, keypoint_num=None):
     kp1, kp2, matches = get_matching_keypoints(img1, img2, keypoint_num)
 
-    ???
+    X = my_ls(matches, kp1, kp2)
+
+    M = np.array([[X[0][0], X[1][0], X[2][0]],
+                  [X[3][0], X[4][0], X[5][0]],
+                  [0, 0, 1]])
 
     result = backward(img1, M)
+    print('All matches \n',M)
     return result.astype(np.uint8)
+
 
 def feature_matching_RANSAC(img1, img2, keypoint_num=None, iter_num=500, threshold_distance=10):
     '''
@@ -133,30 +152,64 @@ def feature_matching_RANSAC(img1, img2, keypoint_num=None, iter_num=500, thresho
         # RANSAC을 이용하여 최적의 affine matrix를 찾고 변환하기
         # 1. 랜덤하게 3개의 matches point를 뽑아냄
         # 2. 1에서 뽑은 matches를 이용하여 affine matrix M을 구함
+        """
+            matches: List[cv2.DMatch]
+            cv2.DMatch의 배열로 구성
+
+            cv2.DMatch: 
+                trainIdx: img1의 kp1, des1에 매칭되는 index
+                queryIdx: img2의 kp2, des2에 매칭되는 index
+
+            kp1[queryIdx]와 kp2[trainIdx]는 매칭된 점
+            """
         # 3. 2에서 구한 M을 모든 matches point와 연산하여 inlier의 개수를 파악
         # 4. iter_num 반복하여 가장 많은 inlier를 가지는 M을 최종 affine matrix로 채택
-        ########################################################################
+        #########png')
+    # src2 = cv2.imread('../Lena###############################################################
+
         random.shuffle(matches_shuffle)
         three_points = matches_shuffle[:3]
-        ???
+        X = my_ls(three_points, kp1, kp2)
+        M = np.array([[X[0][0], X[1][0], X[2][0]],
+                      [X[3][0], X[4][0], X[5][0]],
+                      [0, 0, 1]])
+        num = 0
+        for match in matches: # 모든 match_point에 대조하여 두 점 사이 거리가 10 이하인 경우 Num 증
+            M_pt1 = (np.dot(M, np.array([[kp1[match.queryIdx].pt[0], kp1[match.queryIdx].pt[1], 1]]).T))
+            pt1 = np.array([M_pt1[0][0], M_pt1[1][0]])
+            pt2 = np.array(kp2[match.trainIdx].pt)
+            if L2_distance(pt1,pt2) < threshold_distance:
+                num+=1
+        inliers.append(num)
+        M_list.append(M)
 
-    best_M = ???
+    print('\n',inliers)
 
+
+    inliers = np.array(inliers)
+    best_M = M_list[inliers.argmax()]
     result = backward(img1, best_M)
+
+    print(inliers.argmax(), ' is Best case, Inliers : ', inliers.max())
+    print('--- [RANSAC] Best Matrix --- \n', best_M)
+
     return result.astype(np.uint8)
 
 def L2_distance(vector1, vector2):
+    # print(vector1, vector2)
     return np.sqrt(np.sum((vector1-vector2)**2))
 
 def main():
-    src = cv2.imread('../Lena.png')
-    src2 = cv2.imread('../LenaFaceShear.png')
+    # src = cv2.imread('Lena.png')
+    # src2 = cv2.imread('LenaFaceShear.png')
+    src = cv2.imread('library1.jpg')
+    src2 = cv2.imread('library2.jpg')
 
     result_RANSAC = feature_matching_RANSAC(src, src2)
     result_LS = feature_matching(src, src2)
     cv2.imshow('input', src)
-    cv2.imshow('result RANSAC 2021000000', result_RANSAC)
-    cv2.imshow('result LS 2021000000', result_LS)
+    cv2.imshow('result RANSAC 201702083', result_RANSAC)
+    cv2.imshow('result LS 201702083', result_LS)
     cv2.imshow('goal', src2)
     cv2.waitKey()
     cv2.destroyAllWindows()

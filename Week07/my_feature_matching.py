@@ -37,8 +37,8 @@ def backward(img1, M):
 
     for row in range(h):
         for col in range(w):
-            xy_prime = ???
-            xy = ???
+            xy_prime = np.array([[col,row,1]]).T
+            xy = (np.linalg.inv(M)).dot(xy_prime)
 
             x_ = xy[0, 0]
             y_ = xy[1, 0]
@@ -62,13 +62,25 @@ def my_ls(matches, kp1, kp2):
     A = []
     B = []
     for idx, match in enumerate(matches):
-        ???
+        trainInd = match.trainIdx
+        queryInd = match.queryIdx
+        x,y = kp1[queryInd].pt
+        x_prime,y_prime = kp2[trainInd].pt
 
+        A.append([x,y,1,0,0,0])
+        A.append([0,0,0,x,y,1])
+        B.append([x_prime])
+        B.append([y_prime])
     A = np.array(A)
     B = np.array(B)
 
     try:
-        ???
+        ATA = np.dot(A.T, A)
+        ATB = np.dot(A.T, B)
+        X = np.dot(np.linalg.inv(ATA), ATB)
+        print('ATA\n',ATA)
+        print('ATB\n',ATB)
+        print('X\n',X)
     except:
         print('can\'t calculate np.linalg.inv((np.dot(A.T, A)) !!!!!')
         X = None
@@ -82,14 +94,18 @@ def get_matching_keypoints(img1, img2, keypoint_num):
     :param keypoint_num: 추출한 keypoint의 수
     :return: img1의 특징점인 kp1, img2의 특징점인 kp2, 두 특징점의 매칭 결과
     '''
-    sift = cv2.xfeatures2d.SIFT_create(keypoint_num)
+
+    sift = cv2.SIFT_create(keypoint_num)
+
 
     kp1, des1 = sift.detectAndCompute(img1, None)
     kp2, des2 = sift.detectAndCompute(img2, None)
 
-    bf = cv2.BFMatcher_create(cv2.DIST_L2, crossCheck=True)
-    matches = bf.match(des1, des2)
+    # bf = cv2.BFMatcher_create(cv2.DIST_L2, crossCheck=True)
+    bf = cv2.BFMatcher_create(cv2.DIST_L2)
 
+
+    matches = bf.match(des1, des2)
     matches = sorted(matches, key=lambda x: x.distance)
 
     """
@@ -121,11 +137,13 @@ def feature_matching(img1, img2, keypoint_num=None):
 def main():
     src = cv2.imread('Lena.png')
     src2 = cv2.imread('LenaFaceShear.png')
-
+    #
     result = feature_matching(src, src2)
     cv2.imshow('result', result)
     cv2.waitKey()
     cv2.destroyAllWindows()
+
+
 
 
 if __name__ == '__main__':
