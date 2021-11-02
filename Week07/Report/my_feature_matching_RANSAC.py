@@ -126,7 +126,6 @@ def feature_matching(img1, img2, keypoint_num=None):
                   [0, 0, 1]])
 
     result = backward(img1, M)
-    print('All matches \n',M)
     return result.astype(np.uint8)
 
 
@@ -164,8 +163,6 @@ def feature_matching_RANSAC(img1, img2, keypoint_num=None, iter_num=500, thresho
             """
         # 3. 2에서 구한 M을 모든 matches point와 연산하여 inlier의 개수를 파악
         # 4. iter_num 반복하여 가장 많은 inlier를 가지는 M을 최종 affine matrix로 채택
-        #########png')
-    # src2 = cv2.imread('../Lena###############################################################
 
         random.shuffle(matches_shuffle)
         three_points = matches_shuffle[:3]
@@ -174,29 +171,28 @@ def feature_matching_RANSAC(img1, img2, keypoint_num=None, iter_num=500, thresho
                       [X[3][0], X[4][0], X[5][0]],
                       [0, 0, 1]])
         num = 0
+
         for match in matches: # 모든 match_point에 대조하여 두 점 사이 거리가 10 이하인 경우 Num 증
             M_pt1 = (np.dot(M, np.array([[kp1[match.queryIdx].pt[0], kp1[match.queryIdx].pt[1], 1]]).T))
-            pt1 = np.array([M_pt1[0][0], M_pt1[1][0]])
-            pt2 = np.array(kp2[match.trainIdx].pt)
-            if L2_distance(pt1,pt2) < threshold_distance:
-                num+=1
+            pt1 = np.array([M_pt1[0][0], M_pt1[1][0]]) # 행렬 연산 좌표
+            pt2 = np.array(kp2[match.trainIdx].pt) # 비교할 좌표
+            if L2_distance(pt1,pt2) < threshold_distance: num+=1
+
         inliers.append(num)
         M_list.append(M)
 
     print('\n',inliers)
 
-
     inliers = np.array(inliers)
-    best_M = M_list[inliers.argmax()]
-    result = backward(img1, best_M)
+    best_M = M_list[inliers.argmax()] # inlier가 가장 많은 매트릭스 선택
+    result = backward(img1, best_M) # backward warping
 
     print(inliers.argmax(), ' is Best case, Inliers : ', inliers.max())
     print('--- [RANSAC] Best Matrix --- \n', best_M)
 
-    return result.astype(np.uint8)
+    return result.astype(np.uint8) # float to uint
 
 def L2_distance(vector1, vector2):
-    # print(vector1, vector2)
     return np.sqrt(np.sum((vector1-vector2)**2))
 
 def main():
